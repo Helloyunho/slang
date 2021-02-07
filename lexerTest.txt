@@ -1,0 +1,15 @@
+func main() {
+  let nullable?: str
+  let myName := "Dj"
+  myName ?= nullable
+  assert myName == "Dj"
+
+  let bestNumber: i32 = 69
+  assert bestNumber == 69
+
+  if (nullable == null) {
+    println("wtf are you doing bruh")
+  } else {
+    println("finally some fucking food")
+  }
+}
