@@ -1,6 +1,7 @@
 export enum TokenType {
   Word,
   Keyword,
+  Type,
   Number,
   Float,
   String,
@@ -9,12 +10,14 @@ export enum TokenType {
   ArithmeticOperator,
   LogicalOperator,
   BinaryOperator,
+  UnaryOperator,
   Parenthesis,
   Braces,
   SqBraces,
   Comment,
   CommentMultiline,
-  Operator
+  Operator,
+  NewLine
 }
 
 export interface Position {
@@ -30,6 +33,7 @@ export interface Token extends Position {
 export interface LexerOperators {
   assignment: string[]
   arithmetic: string[]
+  unary: string[]
   logical: string[]
   binary: string[]
   comment: string[]
@@ -66,8 +70,10 @@ export enum StateType {
   SqBraces,
   Char,
   Operator,
+  UnaryOperator,
   Comment,
-  CommentMultiline
+  CommentMultiline,
+  NewLine
 }
 
 export class LexerState implements Position {
@@ -117,6 +123,8 @@ export class LexerState implements Position {
     } else if (this.type === StateType.Word) {
       if (this.lexer.options.keywords.includes(this.value))
         this.token(TokenType.Keyword)
+      else if (this.lexer.options.types.includes(this.value))
+        this.token(TokenType.Type)
       else this.token(TokenType.Word)
     } else if (this.type === StateType.String) {
       this.token(TokenType.String)
@@ -134,6 +142,8 @@ export class LexerState implements Position {
         this.token(TokenType.LogicalOperator)
       } else if (op === 'binary') {
         this.token(TokenType.BinaryOperator)
+      } else if (op === 'unary') {
+        this.token(TokenType.UnaryOperator)
       } else {
         this.token(TokenType.Operator)
       }
@@ -141,6 +151,10 @@ export class LexerState implements Position {
       this.token(TokenType.Comment)
     } else if (this.type === StateType.CommentMultiline) {
       this.token(TokenType.CommentMultiline)
+    } else if (this.type === StateType.UnaryOperator) {
+      this.token(TokenType.UnaryOperator)
+    } else if (this.type === StateType.NewLine) {
+      this.token(TokenType.NewLine)
     }
     this.reset()
   }
@@ -223,6 +237,14 @@ export class Lexer implements Position {
     return res
   }
 
+  checkIfItsOperator(char: string): boolean {
+    const operatorsMerged: string[] = [].concat(
+      ...Object.values(this.options.operators)
+    )
+
+    return operatorsMerged.includes(char)
+  }
+
   parse(code: string): ILexerResults {
     this.start()
     const chars = code.split('')
@@ -231,7 +253,6 @@ export class Lexer implements Position {
     while (idx < chars.length) {
       const char = chars[idx]
       const cc = char.charCodeAt(0)
-      const peek: string | undefined = chars[idx]
       const state = () => this.state.type
 
       if (state() === StateType.String && char !== '"') {
@@ -275,6 +296,9 @@ export class Lexer implements Position {
             this.results.error('Unexpected new line in Char state')
           }
           this.state.end()
+          this.state.start(StateType.NewLine)
+          this.state.pos()
+          this.state.end()
           this.newline()
         } else if (char === '\r') {
         } else if (cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) {
@@ -314,15 +338,12 @@ export class Lexer implements Position {
             this.state.type = StateType.Float
             this.state.push(char)
           } else {
-            let st = state()
             this.state.end()
             this.state.start(StateType.Operator)
             this.state.pos()
             this.state.push(char)
             this.state.end()
           }
-        } else if (char === ';') {
-          this.state.end()
         } else if (char === ')' || char === '(') {
           this.state.end()
           this.state.push(char)
@@ -345,53 +366,78 @@ export class Lexer implements Position {
           this.state.end()
 
           let opChars = ''
-          while (chars[idx] && chars[idx] !== ' ' && opChars.length < 2) {
+          while (
+            chars[idx] &&
+            chars[idx] !== ' ' &&
+            opChars.length < 2 &&
+            this.checkIfItsOperator(chars[idx])
+          ) {
             opChars += chars[idx]
             this.move()
             idx++
           }
           idx--
 
-          const op:
-            | 'arithmetic'
-            | 'assignment'
-            | 'binary'
-            | 'logical'
-            | 'comment'
-            | 'commentMultiline'
-            | 'other'
-            | null = this.getOp(opChars)
-
-          if (op !== null) {
-            this.state.start(StateType.Operator)
-            this.state.pos()
-            if (op === 'arithmetic') {
-              this.state.push(opChars)
-              this.state.end()
-            } else if (op === 'assignment') {
-              this.state.push(opChars)
-              this.state.end()
-            } else if (op === 'binary') {
-              this.state.push(opChars)
-              this.state.end()
-            } else if (op === 'logical') {
-              this.state.push(opChars)
-              this.state.end()
-            } else if (op === 'comment') {
-              this.state.start(StateType.Comment)
-              this.state.pos()
-            } else if (op === 'commentMultiline') {
-              this.state.start(StateType.CommentMultiline)
-              this.state.pos()
-            } else if (op === 'other') {
-              this.state.push(opChars)
-              this.state.end()
+          if (opChars === '+' || opChars === '-') {
+            if (
+              [
+                TokenType.ArithmeticOperator,
+                TokenType.AssignmentOperator,
+                TokenType.BinaryOperator,
+                TokenType.LogicalOperator,
+                TokenType.UnaryOperator,
+                TokenType.Operator,
+                undefined
+              ].includes(
+                this.state.lexer.results.tokens[
+                  this.state.lexer.results.tokens.length - 1
+                ].type
+              )
+            ) {
+              this.state.start(StateType.UnaryOperator)
             } else {
-              this.state.reset()
+              this.state.start(StateType.Operator)
             }
+            this.state.pos()
+            this.state.push(opChars)
+            this.state.end()
           } else {
-            this.results.error(`Unexpected token ${char}`)
-            break
+            const op = this.getOp(opChars)
+
+            if (op !== null) {
+              this.state.start(StateType.Operator)
+              this.state.pos()
+              if (op === 'arithmetic') {
+                this.state.push(opChars)
+                this.state.end()
+              } else if (op === 'assignment') {
+                this.state.push(opChars)
+                this.state.end()
+              } else if (op === 'binary') {
+                this.state.push(opChars)
+                this.state.end()
+              } else if (op === 'logical') {
+                this.state.push(opChars)
+                this.state.end()
+              } else if (op === 'comment') {
+                this.state.start(StateType.Comment)
+                this.state.pos()
+              } else if (op === 'commentMultiline') {
+                this.state.start(StateType.CommentMultiline)
+                this.state.pos()
+              } else if (op === 'unary') {
+                this.state.push(opChars)
+                this.state.end()
+              } else if (op === 'other') {
+                this.state.push(opChars)
+                this.state.end()
+              } else {
+                this.state.reset()
+              }
+            } else {
+              this.results.error(`Unexpected token ${char}`)
+              break
+            }
           }
         }
       }
@@ -424,6 +470,8 @@ export class Lexer implements Position {
       ? 'comment'
       : this.options.operators.longComment.includes(char)
       ? 'commentMultiline'
+      : this.options.operators.unary.includes(char)
+      ? 'unary'
       : this.options.operators.other.includes(char)
       ? 'other'
       : null

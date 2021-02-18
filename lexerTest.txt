@@ -1,15 +1,15 @@
-func main() {
-  let nullable?: str
-  let myName := "Dj"
-  myName ?= nullable
-  assert myName == "Dj"
+const helloSomeone := func (someone: str): "gay" {
+  println("Hello, " + someone)
+}
+helloSomeone("dj")
 
-  let bestNumber: i32 = 69
-  assert bestNumber == 69
+class DJ extends Gay implements Dj {
+  let asdf: str
+  func init(): void {
+    this.asdf = "gay"
+  }
 
-  if (nullable == null) {
-    println("wtf are you doing bruh")
-  } else {
-    println("finally some fucking food")
+  func print(): void {
+    println(this.asdf)
   }
 }

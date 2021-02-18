@@ -2,13 +2,14 @@ import { LexerOptions } from './lexer.ts'
 
 export const lexerOptions: LexerOptions = {
   operators: {
-    arithmetic: ['+', '-', '*', '/', '%', '++', '--'],
-    assignment: ['=', '+=', '-=', '/=', '*=', '%=', '?='],
-    logical: ['==', '!=', '&&', '||'],
+    arithmetic: ['+', '-', '*', '/', '%'],
+    assignment: ['=', '+=', '-=', '/=', '*=', '%=', '?=', ':='],
+    unary: ['++', '--', '!'],
+    logical: ['==', '!=', '&&', '||', '<', '<=', '>', '>='],
     binary: ['^', '&', '|'],
     comment: ['//'],
     longComment: ['/*', '*/'],
-    other: [':', '.', '??', '?', '(', ')']
+    other: [':', '.', '??', '?', '(', ')', ',', '?.', ';']
   },
   types: ['i32', 'i64', 'u32', 'u64', 'str', 'char', 'bool', 'null', 'void'],
   keywords: [
@@ -21,7 +22,6 @@ export const lexerOptions: LexerOptions = {
     'interface',
     'true',
     'false',
-    'this',
     'extends',
     'implements',
     'as',
@@ -29,6 +29,7 @@ export const lexerOptions: LexerOptions = {
     'if',
     'else',
     'for',
-    'assert'
+    'assert',
+    'return'
   ]
 }

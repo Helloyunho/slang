@@ -1,3 +1,4 @@
+import { AST } from './ast/index.ts'
 import { lexerOptions } from './langRules.ts'
 import { Lexer, LexerOptions, TokenType } from './lexer.ts'
 
@@ -23,3 +24,12 @@ if (data.errors.length) {
     console.log(`- error: ${err.msg} at debug:${err.line}:${err.col}`)
   }
 }
+
+const ast = new AST(data.tokens)
+console.log(
+  Deno.inspect(ast.statements.globalBlockStatement(), {
+    colors: true,
+    depth: Infinity,
+    iterableLimit: Infinity
+  })
+)
