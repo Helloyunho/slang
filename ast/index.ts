@@ -1,4 +1,4 @@
-import { Token, TokenType } from '../lexer.ts'
+import { Position, Token, TokenType } from '../lexer.ts'
 import { Expressions } from './expressions.ts'
 import { Operators } from './operators.ts'
 import { Statements } from './statements.ts'
@@ -135,7 +135,11 @@ export class AST {
         return token
       } else {
         if (raiseError) {
-          this.error(`Unexpected syntax ${token.value}`, token.line, token.col)
+          this.error(
+            `Unexpected syntax ${token.value}`,
+            token.start.line,
+            token.start.col
+          )
         } else {
           return undefined
         }
@@ -143,7 +147,7 @@ export class AST {
     } else {
       if (raiseError) {
         const lastToken = this.tokens[this.tokens.length - 1]
-        this.error(`Unexpected EOF`, lastToken.line, lastToken.col)
+        this.error(`Unexpected EOF`, lastToken.start.line, lastToken.start.col)
       } else {
         return undefined
       }
@@ -162,12 +166,16 @@ export class AST {
 
     const getType = () => {
       let type: TypeValues | ReturnsValue
+      let start: Position
+      let end: Position
       const typeToken = this.checkToken({
         type: TokenType.Type,
         raiseError: false
-      })?.value
+      })
       if (typeToken !== undefined) {
-        type = typeToken as TypeValues
+        type = typeToken.value as TypeValues
+        start = typeToken.start
+        end = typeToken.end
       } else {
         type = this.getReturnsValue(true, [
           'AssignVariableStatement',
@@ -178,6 +186,8 @@ export class AST {
           'ArrayParsed',
           'AccessWithArrayLikeExpression'
         ])
+        start = type.start
+        end = type.end
       }
 
       let arrayLength: undefined | number
@@ -195,16 +205,18 @@ export class AST {
           })?.value ?? Infinity
         )
 
-        this.checkToken({
+        end = this.checkToken({
           type: TokenType.SqBraces,
           value: ']'
-        })
+        }).end
       }
 
       const result: Types = {
         type: 'Types',
         value: type,
-        arrayLength
+        arrayLength,
+        start,
+        end
       }
 
       types.push(result)
@@ -263,7 +275,7 @@ export class AST {
         !skipTokenType.includes('CallFunctionExpression') &&
         (upAST?.type === 'CallFunctionExpression' ||
           upAST?.type === 'AccessDotExpression' ||
-          upAST?.type === 'AccessVariableExpression' ||
+          upAST?.type === 'Identifier' ||
           upAST?.type === 'AccessWithArrayLikeExpression')
       ) {
         upAST = this.expressions.callFunctionExpression(upAST)
@@ -294,7 +306,7 @@ export class AST {
       if (
         upAST?.type === 'CallFunctionExpression' ||
         upAST?.type === 'AccessDotExpression' ||
-        upAST?.type === 'AccessVariableExpression' ||
+        upAST?.type === 'Identifier' ||
         upAST?.type === 'AccessWithArrayLikeExpression'
       ) {
         upAST = this.statements.assignVariable(upAST)
@@ -325,7 +337,7 @@ export class AST {
       // #endregion
     } else if (
       (!skipTokenType.includes('AccessDotExpression') ||
-        !skipTokenType.includes('AccessVariableExpression') ||
+        !skipTokenType.includes('Identifier') ||
         !skipTokenType.includes('CallFunctionExpression')) &&
       currentToken?.type === TokenType.Word
     ) {
@@ -337,8 +349,8 @@ export class AST {
         if (raiseError) {
           this.error(
             `Unexpected syntax ${currentToken.value}`,
-            currentToken.line ?? 0,
-            currentToken.col ?? 0
+            currentToken.start.line ?? 0,
+            currentToken.start.col ?? 0
           )
         } else {
           return upAST
@@ -371,7 +383,7 @@ export class AST {
       if (
         !skipTokenType.includes('AccessWithArrayLikeExpression') &&
         (upAST?.type === 'AccessDotExpression' ||
-          upAST?.type === 'AccessVariableExpression' ||
+          upAST?.type === 'Identifier' ||
           upAST?.type === 'CallFunctionExpression')
       ) {
         upAST = this.expressions.accessWithArrayLikeExpression(upAST)
@@ -426,8 +438,8 @@ export class AST {
         if (raiseError) {
           this.error(
             `Unexpected syntax ${currentToken.value}`,
-            currentToken.line ?? 0,
-            currentToken.col ?? 0
+            currentToken.start.line ?? 0,
+            currentToken.start.col ?? 0
           )
         } else {
           return upAST
@@ -447,8 +459,8 @@ export class AST {
       if (raiseError) {
         this.error(
           `Unexpected syntax ${currentToken?.value}`,
-          currentToken?.line ?? 0,
-          currentToken?.col ?? 0
+          currentToken?.start.line ?? 0,
+          currentToken?.start.col ?? 0
         )
       } else {
         return upAST

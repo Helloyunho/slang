@@ -1,8 +1,8 @@
-import { TokenType } from '../lexer.ts'
+import { Position, TokenType } from '../lexer.ts'
 import { Base } from './base.ts'
 import {
   AccessDotExpression,
-  AccessVariableExpression,
+  Identifier,
   AccessWithArrayLikeExpression,
   AssignVariableStatement,
   BlockStatement,
@@ -23,20 +23,19 @@ import {
   ReturnStatement,
   ReturnsValue,
   Types,
-  WhileStatement
+  WhileStatement,
+  StringParsed
 } from './types.ts'
 
 export class Statements extends Base {
   initializeVariableStatement(): InitializeVariableStatement {
-    const isConst =
-      this.AST.checkToken({
-        type: TokenType.Keyword,
-        value: ['let', 'const']
-      }).value === 'const'
+    const initializerToken = this.AST.checkToken({
+      type: TokenType.Keyword,
+      value: ['let', 'const']
+    })
+    const isConst = initializerToken.value === 'const'
 
-    const name = this.AST.checkToken({
-      type: TokenType.Word
-    }).value
+    const name = this.AST.expressions.identifierExpression()
 
     let type: Types[] | undefined
     if (
@@ -57,7 +56,7 @@ export class Statements extends Base {
     if (
       this.AST.checkToken({
         type: TokenType.AssignmentOperator,
-        value: '=',
+        value: ['=', ':='],
         raiseError: false
       }) !== undefined
     ) {
@@ -69,7 +68,14 @@ export class Statements extends Base {
       const: isConst,
       name,
       variableType: type,
-      value
+      value,
+      start: initializerToken.start,
+      end:
+        value !== undefined
+          ? value.end
+          : type !== undefined
+          ? type[type.length - 1].end
+          : name.end
     }
 
     return result
@@ -78,7 +84,7 @@ export class Statements extends Base {
   assignVariable(
     upAST?:
       | AccessDotExpression
-      | AccessVariableExpression
+      | Identifier
       | CallFunctionExpression
       | AccessWithArrayLikeExpression
   ): AssignVariableStatement {
@@ -94,29 +100,38 @@ export class Statements extends Base {
       type: 'AssignVariableStatement',
       target,
       value,
-      operator
+      operator,
+      start: target.start,
+      end: value.end
     }
 
     return result
   }
 
   functionStatement(nameRequired: boolean = false): FunctionStatement {
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Keyword,
       value: 'func'
     })
 
-    const name = this.AST.checkToken({
-      type: TokenType.Word,
-      raiseError: false
-    })?.value
-    if (nameRequired && name === undefined) {
-      const errorToken = this.AST.getToken({})
-      this.AST.error(
-        'Name is required in function.',
-        errorToken?.line ?? 0,
-        errorToken?.col ?? 0
-      )
+    let name: Identifier | undefined
+    if (
+      this.AST.checkToken({
+        type: TokenType.Word,
+        addToIndex: false,
+        raiseError: false
+      }) !== undefined
+    ) {
+      name = this.AST.expressions.identifierExpression()
+    } else {
+      if (nameRequired) {
+        const errorToken = this.AST.getToken({})
+        this.AST.error(
+          'Name is required in function.',
+          errorToken?.start.line ?? 0,
+          errorToken?.start.col ?? 0
+        )
+      }
     }
 
     this.AST.checkToken({
@@ -132,9 +147,7 @@ export class Statements extends Base {
         raiseError: false
       }) === undefined
     ) {
-      const paramName = this.AST.checkToken({
-        type: TokenType.Word
-      }).value
+      const paramName = this.AST.expressions.identifierExpression()
 
       this.AST.checkToken({
         type: TokenType.Operator,
@@ -156,7 +169,12 @@ export class Statements extends Base {
       const paramResult: FunctionParameter = {
         name: paramName,
         returnType: paramType,
-        default: defaultValue
+        default: defaultValue,
+        start: paramName.start,
+        end:
+          defaultValue !== undefined
+            ? defaultValue.end
+            : paramType[paramType.length - 1].end
       }
 
       params.push(paramResult)
@@ -174,44 +192,43 @@ export class Statements extends Base {
     })
     const returnType = this.AST.getTypes()
 
-    const { body } = this.blockStatement()
+    const block = this.blockStatement()
 
     const result: FunctionStatement = {
       type: 'FunctionStatement',
       name,
-      body,
+      block,
       params,
-      returnType
+      returnType,
+      start,
+      end: block.end
     }
 
     return result
   }
 
   interfaceStatement(): InterfaceStatement {
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Keyword,
       value: 'interface'
     })
 
-    const name = this.AST.checkToken({
-      type: TokenType.Word
-    }).value
+    const name = this.AST.expressions.identifierExpression()
 
     const elements: InterfaceElements[] = []
     this.AST.checkToken({
       type: TokenType.Braces,
       value: '{'
     })
+    let end
     while (
-      this.AST.checkToken({
+      (end = this.AST.checkToken({
         type: TokenType.Braces,
         value: '}',
         raiseError: false
-      }) === undefined
+      })?.end) === undefined
     ) {
-      const elementName = this.AST.checkToken({
-        type: TokenType.Word
-      }).value
+      const elementName = this.AST.expressions.identifierExpression()
 
       this.AST.checkToken({
         type: TokenType.Operator,
@@ -221,7 +238,9 @@ export class Statements extends Base {
 
       const element: InterfaceElements = {
         name: elementName,
-        returnType: elementType
+        returnType: elementType,
+        start: elementName.start,
+        end: elementType[elementType.length - 1].end
       }
 
       elements.push(element)
@@ -236,14 +255,16 @@ export class Statements extends Base {
     const result: InterfaceStatement = {
       type: 'InterfaceStatement',
       name,
-      elements
+      elements,
+      start,
+      end
     }
 
     return result
   }
 
   whileStatement(): WhileStatement {
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Keyword,
       value: 'while'
     })
@@ -258,19 +279,21 @@ export class Statements extends Base {
       value: ')'
     })
 
-    const { body } = this.blockStatement()
+    const block = this.blockStatement()
 
     const result: WhileStatement = {
       type: 'WhileStatement',
       condition,
-      body
+      block,
+      start,
+      end: block.end
     }
 
     return result
   }
 
   conditionStatement(): ConditionStatement {
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Keyword,
       value: 'if'
     })
@@ -285,16 +308,21 @@ export class Statements extends Base {
       value: ')'
     })
 
-    const { body } = this.blockStatement()
+    const block = this.blockStatement()
 
     let elseBody: undefined | ConditionStatement
     if (
       this.AST.checkToken({
         type: TokenType.Keyword,
         value: 'else',
+        addToIndex: false,
         raiseError: false
       }) !== undefined
     ) {
+      const elseToken = this.AST.checkToken({
+        type: TokenType.Keyword,
+        value: 'else'
+      })
       if (
         this.AST.checkToken({
           type: TokenType.Keyword,
@@ -305,9 +333,12 @@ export class Statements extends Base {
       ) {
         elseBody = this.conditionStatement()
       } else {
+        const block = this.blockStatement()
         elseBody = {
           type: 'ConditionStatement',
-          body: this.blockStatement().body
+          block,
+          start: elseToken.start,
+          end: block.end
         }
       }
     }
@@ -315,15 +346,17 @@ export class Statements extends Base {
     const result: ConditionStatement = {
       type: 'ConditionStatement',
       condition,
-      body,
-      elseBody
+      block,
+      elseBody,
+      start,
+      end: elseBody !== undefined ? elseBody.end : block.end
     }
 
     return result
   }
 
   forStatement(): ForStatement {
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Keyword,
       value: 'for'
     })
@@ -348,29 +381,30 @@ export class Statements extends Base {
       value: ')'
     })
 
-    const { body } = this.blockStatement()
+    const block = this.blockStatement()
 
     const result: ForStatement = {
       type: 'ForStatement',
       variable,
       condition,
       increment,
-      body
+      block,
+      start,
+      end: block.end
     }
 
     return result
   }
+
   classStatement(): ClassStatement {
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Keyword,
       value: 'class'
     })
 
-    const name = this.AST.checkToken({
-      type: TokenType.Word
-    }).value
+    const name = this.AST.expressions.identifierExpression()
 
-    let extend: undefined | AccessDotExpression | AccessVariableExpression
+    let extend: undefined | AccessDotExpression | Identifier
     if (
       this.AST.checkToken({
         type: TokenType.Keyword,
@@ -388,13 +422,13 @@ export class Statements extends Base {
         const errorToken = this.AST.getToken({})
         this.AST.error(
           `Functions or array-like accessor cannot used to extend class.`,
-          errorToken?.line ?? 0,
-          errorToken?.col ?? 0
+          errorToken?.start.line ?? 0,
+          errorToken?.start.col ?? 0
         )
       }
     }
 
-    let implement: undefined | AccessDotExpression | AccessVariableExpression
+    let implement: undefined | AccessDotExpression | Identifier
     if (
       this.AST.checkToken({
         type: TokenType.Keyword,
@@ -412,8 +446,8 @@ export class Statements extends Base {
         const errorToken = this.AST.getToken({})
         this.AST.error(
           `Functions or array-like accessor cannot used to implement class.`,
-          errorToken?.line ?? 0,
-          errorToken?.col ?? 0
+          errorToken?.start.line ?? 0,
+          errorToken?.start.col ?? 0
         )
       }
     }
@@ -425,12 +459,13 @@ export class Statements extends Base {
     const properties: InitializeVariableStatement[] = []
     const methods: FunctionStatement[] = []
     let initializer: undefined | FunctionStatement
+    let end
     while (
-      this.AST.checkToken({
+      (end = this.AST.checkToken({
         type: TokenType.Braces,
         value: '}',
         raiseError: false
-      }) === undefined
+      })?.end) === undefined
     ) {
       if (
         this.AST.checkToken({
@@ -443,7 +478,7 @@ export class Statements extends Base {
         properties.push(this.initializeVariableStatement())
       } else {
         const func = this.functionStatement()
-        if (func.name === 'init') {
+        if (func.name?.name === 'init') {
           initializer = func
         } else {
           methods.push(func)
@@ -458,7 +493,9 @@ export class Statements extends Base {
       implements: implement,
       properties,
       methods,
-      initializer
+      initializer,
+      start,
+      end
     }
 
     return result
@@ -467,11 +504,15 @@ export class Statements extends Base {
   blockStatement(useForGlobalBlock: boolean = false): BlockStatement {
     const body: Node[] = []
 
+    let start: Position = {
+      line: 0,
+      col: 0
+    }
     if (!useForGlobalBlock) {
-      this.AST.checkToken({
+      start = this.AST.checkToken({
         type: TokenType.Braces,
         value: '{'
-      })
+      }).start
     }
 
     let token = this.AST.getToken({})
@@ -485,13 +526,16 @@ export class Statements extends Base {
           body.push(this.initializeVariableStatement())
           break
         } else if (token.value === 'return') {
-          this.AST.checkToken({
+          const { start } = this.AST.checkToken({
             type: TokenType.Keyword,
             value: 'return'
           })
+          const value = this.AST.getReturnsValue()
           const result: ReturnStatement = {
             type: 'ReturnStatement',
-            value: this.AST.getReturnsValue()
+            value,
+            start,
+            end: value.end
           }
           body.push(result)
         } else if (token.value === 'interface') {
@@ -520,15 +564,28 @@ export class Statements extends Base {
       token = this.AST.getToken({})
     }
 
+    let end = token?.end
     if (!useForGlobalBlock) {
-      this.AST.checkToken({
+      end = this.AST.checkToken({
         type: TokenType.Braces,
         value: '}'
+      }).end
+    }
+    if (end === undefined) {
+      const previousToken = this.AST.getToken({
+        offset: this.AST.tokenIndex - 1
       })
+      end = {
+        line: previousToken?.end.line ?? 0,
+        col: (previousToken?.end.col ?? 0) + 1
+      }
     }
 
     const result: BlockStatement = {
-      body
+      type: 'BlockStatement',
+      body,
+      start,
+      end
     }
 
     return result
@@ -541,15 +598,13 @@ export class Statements extends Base {
     while (token !== undefined) {
       if (token.type === TokenType.Keyword) {
         if (token.value === 'import') {
-          this.AST.checkToken({
+          const { start } = this.AST.checkToken({
             type: TokenType.Keyword,
             value: 'import'
           })
 
-          const what: string[] = [
-            this.AST.checkToken({
-              type: TokenType.Word
-            }).value
+          const what: Identifier[] = [
+            this.AST.expressions.identifierExpression()
           ]
           while (
             this.AST.checkToken({
@@ -558,38 +613,32 @@ export class Statements extends Base {
               raiseError: false
             }) !== undefined
           ) {
-            what.push(
-              this.AST.checkToken({
-                type: TokenType.Word
-              }).value
-            )
+            what.push(this.AST.expressions.identifierExpression())
           }
 
           this.AST.checkToken({
             type: TokenType.Word,
             value: 'from'
           })
-          const from = this.AST.checkToken({
-            type: TokenType.String
-          }).value
+          const from = this.AST.valueParsers.stringParser()
 
           const result: ImportStatement = {
             type: 'ImportStatement',
             what,
-            from
+            from,
+            start,
+            end: from.end
           }
 
           body.push(result)
         } else if (token.value === 'export') {
-          this.AST.checkToken({
+          const { start } = this.AST.checkToken({
             type: TokenType.Keyword,
             value: 'export'
           })
 
-          const what: string[] = [
-            this.AST.checkToken({
-              type: TokenType.Word
-            }).value
+          const what: Identifier[] = [
+            this.AST.expressions.identifierExpression()
           ]
           while (
             this.AST.checkToken({
@@ -598,14 +647,10 @@ export class Statements extends Base {
               raiseError: false
             }) !== undefined
           ) {
-            what.push(
-              this.AST.checkToken({
-                type: TokenType.Word
-              }).value
-            )
+            what.push(this.AST.expressions.identifierExpression())
           }
 
-          let from: undefined | string
+          let from: undefined | StringParsed
           if (
             this.AST.checkToken({
               type: TokenType.Word,
@@ -613,15 +658,15 @@ export class Statements extends Base {
               raiseError: false
             }) !== undefined
           ) {
-            from = this.AST.checkToken({
-              type: TokenType.String
-            }).value
+            from = this.AST.valueParsers.stringParser()
           }
 
           const result: ExportStatement = {
             type: 'ExportStatement',
             what,
-            from
+            from,
+            start,
+            end: from !== undefined ? from.end : what[what.length - 1].end
           }
 
           body.push(result)
@@ -632,9 +677,30 @@ export class Statements extends Base {
       token = this.AST.getToken({})
     }
 
+    const lastToken = this.AST.getToken({
+      offset: -1
+    })
+    let end: Position
+    if (lastToken !== undefined) {
+      end = {
+        col: lastToken.end.col + 1,
+        line: lastToken.end.line
+      }
+    } else {
+      end = {
+        col: 1,
+        line: 0
+      }
+    }
+
     const result: GlobalBlockStatement = {
       type: 'GlobalBlockStatement',
-      body
+      body,
+      start: {
+        col: 0,
+        line: 0
+      },
+      end
     }
 
     return result

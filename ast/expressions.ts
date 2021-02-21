@@ -2,7 +2,7 @@ import { TokenType } from '../lexer.ts'
 import { Base } from './base.ts'
 import {
   AccessDotExpression,
-  AccessVariableExpression,
+  Identifier,
   AccessWithArrayLikeExpression,
   CallFunctionExpression,
   ReturnsValue,
@@ -12,14 +12,14 @@ import {
 export class Expressions extends Base {
   accessDotExpression(
     leftAST?:
-      | AccessVariableExpression
+      | Identifier
       | CallFunctionExpression
       | AccessWithArrayLikeExpression
   ) {
     const left =
       leftAST ??
       (this.accessExpression(true) as
-        | AccessVariableExpression
+        | Identifier
         | CallFunctionExpression
         | AccessWithArrayLikeExpression)
     let returnNull = false
@@ -44,31 +44,30 @@ export class Expressions extends Base {
       type: 'AccessDotExpression',
       left,
       returnNull,
-      right
+      right,
+      start: left.start,
+      end: right.end
     }
 
     return result
   }
 
   accessWithArrayLikeExpression(
-    leftAST?:
-      | AccessVariableExpression
-      | CallFunctionExpression
-      | AccessDotExpression
+    leftAST?: Identifier | CallFunctionExpression | AccessDotExpression
   ) {
     const left =
       leftAST ??
       (this.accessExpression(false, true) as
-        | AccessVariableExpression
+        | Identifier
         | CallFunctionExpression
         | AccessDotExpression)
 
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.SqBraces,
       value: '['
     })
     const right = this.AST.getReturnsValue()
-    this.AST.checkToken({
+    const { end } = this.AST.checkToken({
       type: TokenType.SqBraces,
       value: ']'
     })
@@ -76,20 +75,24 @@ export class Expressions extends Base {
     const result: AccessWithArrayLikeExpression = {
       type: 'AccessWithArrayLikeExpression',
       left,
-      right
+      right,
+      start,
+      end
     }
 
     return result
   }
 
-  accessVariableExpression() {
-    const name = this.AST.checkToken({
+  identifierExpression() {
+    const { value: name, start, end } = this.AST.checkToken({
       type: TokenType.Word
-    }).value
+    })
 
-    const result: AccessVariableExpression = {
-      type: 'AccessVariableExpression',
-      name
+    const result: Identifier = {
+      type: 'Identifier',
+      name,
+      start,
+      end
     }
 
     return result
@@ -97,7 +100,7 @@ export class Expressions extends Base {
 
   callFunctionExpression(
     leftAST?:
-      | AccessVariableExpression
+      | Identifier
       | CallFunctionExpression
       | AccessDotExpression
       | AccessWithArrayLikeExpression
@@ -105,22 +108,23 @@ export class Expressions extends Base {
     const what =
       leftAST ??
       (this.accessExpression(false, false, true) as
-        | AccessVariableExpression
+        | Identifier
         | CallFunctionExpression
         | AccessDotExpression)
 
-    this.AST.checkToken({
+    const { start } = this.AST.checkToken({
       type: TokenType.Parenthesis,
       value: '('
     })
 
     const params: ReturnsValue[] = []
+    let end
     while (
-      this.AST.checkToken({
+      (end = this.AST.checkToken({
         type: TokenType.Parenthesis,
         value: ')',
         raiseError: false
-      }) === undefined
+      })?.end) === undefined
     ) {
       params.push(this.AST.getReturnsValue())
       this.AST.checkToken({
@@ -133,7 +137,9 @@ export class Expressions extends Base {
     const result: CallFunctionExpression = {
       type: 'CallFunctionExpression',
       what,
-      params
+      params,
+      start,
+      end
     }
 
     return result
@@ -145,7 +151,7 @@ export class Expressions extends Base {
     skipFunctionExpression = false
   ):
     | AccessDotExpression
-    | AccessVariableExpression
+    | Identifier
     | CallFunctionExpression
     | AccessWithArrayLikeExpression {
     this.AST.checkToken({
@@ -200,7 +206,7 @@ export class Expressions extends Base {
     ) {
       return this.accessWithArrayLikeExpression()
     } else {
-      return this.accessVariableExpression()
+      return this.identifierExpression()
     }
   }
 
@@ -225,7 +231,9 @@ export class Expressions extends Base {
       type: 'TypeChangeExpression',
       value,
       toType,
-      returnNull
+      returnNull,
+      start: value.start,
+      end: toType[toType.length - 1].end
     }
 
     return result

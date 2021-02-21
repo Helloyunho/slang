@@ -25,9 +25,11 @@ export interface Position {
   col: number
 }
 
-export interface Token extends Position {
+export interface Token {
   type: TokenType
   value: string
+  start: Position
+  end: Position
 }
 
 export interface LexerOperators {
@@ -110,7 +112,18 @@ export class LexerState implements Position {
   }
 
   token(type: TokenType): Token {
-    const token = { type, value: this.value, line: this.line, col: this.col }
+    const token: Token = {
+      type,
+      value: this.value,
+      start: {
+        line: this.line,
+        col: this.col
+      },
+      end: {
+        line: this.lexer.line,
+        col: this.lexer.col
+      }
+    }
     this.lexer.results.push(token)
     return token
   }
@@ -290,7 +303,9 @@ export class Lexer implements Position {
             break
           }
         } else if (char === ' ') {
+          this.col--
           this.state.end()
+          this.col++
         } else if (char === '\n') {
           if (state() === StateType.Char) {
             this.results.error('Unexpected new line in Char state')
@@ -364,6 +379,7 @@ export class Lexer implements Position {
           this.state.reset()
         } else {
           this.state.end()
+          this.state.pos()
 
           let opChars = ''
           while (
@@ -376,7 +392,6 @@ export class Lexer implements Position {
             this.move()
             idx++
           }
-          idx--
 
           if (opChars === '+' || opChars === '-') {
             if (
@@ -398,7 +413,6 @@ export class Lexer implements Position {
             } else {
               this.state.start(StateType.Operator)
             }
-            this.state.pos()
             this.state.push(opChars)
             this.state.end()
           } else {
@@ -406,7 +420,6 @@ export class Lexer implements Position {
 
             if (op !== null) {
               this.state.start(StateType.Operator)
-              this.state.pos()
               if (op === 'arithmetic') {
                 this.state.push(opChars)
                 this.state.end()
@@ -439,6 +452,7 @@ export class Lexer implements Position {
               break
             }
           }
+          continue
         }
       }
 

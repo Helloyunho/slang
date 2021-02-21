@@ -24,7 +24,9 @@ export class Operators extends Base {
       type: 'ArithmeticOperator',
       left,
       operator,
-      right
+      right,
+      start: left.start,
+      end: right.end
     }
 
     return result
@@ -45,7 +47,9 @@ export class Operators extends Base {
       type: 'LogicalOperator',
       left,
       operator,
-      right
+      right,
+      start: left.start,
+      end: right.end
     }
 
     return result
@@ -66,7 +70,9 @@ export class Operators extends Base {
       type: 'BinaryOperator',
       left,
       operator,
-      right
+      right,
+      start: left.start,
+      end: right.end
     }
 
     return result
@@ -87,7 +93,7 @@ export class Operators extends Base {
       location = 'left'
       operator = this.AST.checkToken({
         type: TokenType.UnaryOperator
-      }).value as '++' | '--' | '!' | '+' | '-'
+      })
       value = this.AST.getReturnsValue(true, ['UnaryOperator'])
     } else {
       location = 'right'
@@ -95,14 +101,16 @@ export class Operators extends Base {
       operator = this.AST.checkToken({
         type: TokenType.UnaryOperator,
         value: ['++', '--']
-      }).value as '++' | '--'
+      })
     }
 
     const result: UnaryOperator = {
       type: 'UnaryOperator',
       value,
-      operator,
-      location
+      operator: operator.value as '++' | '--' | '!' | '+' | '-',
+      location,
+      start: location === 'left' ? operator.start : value.start,
+      end: location === 'left' ? value.end : operator.end
     }
 
     return result

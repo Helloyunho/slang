@@ -1,3 +1,5 @@
+import { Position } from '../lexer.ts'
+
 export enum NodeType {
   Variable,
   Function,
@@ -14,7 +16,7 @@ export type ReturnsValue =
   | LogicalOperator
   | BinaryOperator
   | UnaryOperator
-  | AccessVariableExpression
+  | Identifier
   | AccessDotExpression
   | AccessWithArrayLikeExpression
   | StringParsed
@@ -27,102 +29,104 @@ export type ReturnsValue =
   | TypeChangeExpression
   | DictParsed
 
-export interface AccessVariableExpression {
-  type: 'AccessVariableExpression'
+export interface Positions {
+  start: Position
+  end: Position
+}
+
+export interface Identifier extends Positions {
+  type: 'Identifier'
   name: string
 }
 
-export interface CallFunctionExpression {
+export interface CallFunctionExpression extends Positions {
   type: 'CallFunctionExpression'
   what: ReturnsValue
   params: ReturnsValue[]
 }
 
-export interface ArithmeticOperator {
+export interface ArithmeticOperator extends Positions {
   type: 'ArithmeticOperator'
   left: ReturnsValue
   operator: '+' | '-' | '*' | '/' | '%'
   right: ReturnsValue
 }
 
-export interface UnaryOperator {
+export interface UnaryOperator extends Positions {
   type: 'UnaryOperator'
   value: ReturnsValue
   operator: '++' | '--' | '!' | '+' | '-'
   location: 'left' | 'right'
 }
 
-export interface LogicalOperator {
+export interface LogicalOperator extends Positions {
   type: 'LogicalOperator'
   left: ReturnsValue
   operator: '==' | '!=' | '&&' | '||' | '<' | '<=' | '>' | '>='
   right: ReturnsValue
 }
 
-export interface BinaryOperator {
+export interface BinaryOperator extends Positions {
   type: 'BinaryOperator'
   left: ReturnsValue
   operator: '^' | '&' | '|'
   right: ReturnsValue
 }
 
-export interface AccessDotExpression {
+export interface AccessDotExpression extends Positions {
   type: 'AccessDotExpression'
-  left:
-    | AccessVariableExpression
-    | CallFunctionExpression
-    | AccessWithArrayLikeExpression
+  left: Identifier | CallFunctionExpression | AccessWithArrayLikeExpression
   right:
-    | AccessVariableExpression
+    | Identifier
     | CallFunctionExpression
     | AccessDotExpression
     | AccessWithArrayLikeExpression
   returnNull: boolean
 }
 
-export interface AccessWithArrayLikeExpression {
+export interface AccessWithArrayLikeExpression extends Positions {
   type: 'AccessWithArrayLikeExpression'
-  left: AccessVariableExpression | CallFunctionExpression | AccessDotExpression
+  left: Identifier | CallFunctionExpression | AccessDotExpression
   right: ReturnsValue
 }
 
-export interface TypeChangeExpression {
+export interface TypeChangeExpression extends Positions {
   type: 'TypeChangeExpression'
   value: ReturnsValue
   toType: Types[]
   returnNull: boolean
 }
 
-export interface StringParsed {
+export interface StringParsed extends Positions {
   type: 'StringParsed'
   value: string
 }
 
-export interface NumberParsed {
+export interface NumberParsed extends Positions {
   type: 'NumberParsed'
   value: number
 }
 
-export interface BooleanParsed {
+export interface BooleanParsed extends Positions {
   type: 'BooleanParsed'
   value: boolean
 }
 
-export interface NullParsed {
+export interface NullParsed extends Positions {
   type: 'NullParsed'
 }
 
-export interface ArrayParsed {
+export interface ArrayParsed extends Positions {
   type: 'ArrayParsed'
   elements: ReturnsValue[]
 }
 
-export interface DictElement {
-  name: string
+export interface DictElement extends Positions {
+  name: Identifier
   value: ReturnsValue
 }
 
-export interface DictParsed {
+export interface DictParsed extends Positions {
   type: 'DictParsed'
   elements: DictElement[]
 }
@@ -138,26 +142,26 @@ export type TypeValues =
   | 'bool'
   | 'null'
 
-export interface Types {
+export interface Types extends Positions {
   type: 'Types'
   value: TypeValues | ReturnsValue
   arrayLength?: number
 }
 
-export interface InitializeVariableStatement {
+export interface InitializeVariableStatement extends Positions {
   type: 'InitializeVariableStatement'
   const: boolean
-  name: string
+  name: Identifier
   variableType?: Types[]
   value?: ReturnsValue
   export?: boolean
 }
 
-export interface AssignVariableStatement {
+export interface AssignVariableStatement extends Positions {
   type: 'AssignVariableStatement'
   target:
     | AccessDotExpression
-    | AccessVariableExpression
+    | Identifier
     | CallFunctionExpression
     | AccessWithArrayLikeExpression
   operator: string
@@ -165,76 +169,81 @@ export interface AssignVariableStatement {
   export?: boolean
 }
 
-export interface FunctionParameter {
-  name: string
+export interface FunctionParameter extends Positions {
+  name: Identifier
   returnType: Types[]
   default?: ReturnsValue
 }
 
-export interface BlockStatement {
+export interface BlockStatement extends Positions {
+  type: 'BlockStatement'
   body: Node[]
 }
 
-export interface FunctionStatement extends BlockStatement {
+export interface FunctionStatement extends Positions {
   type: 'FunctionStatement'
-  name?: string
+  name?: Identifier
   params: FunctionParameter[]
   returnType: Types[]
   export?: boolean
+  block: BlockStatement
 }
 
-export interface InterfaceElements {
-  name: string
+export interface InterfaceElements extends Positions {
+  name: Identifier
   returnType: Types[]
 }
 
-export interface InterfaceStatement {
+export interface InterfaceStatement extends Positions {
   type: 'InterfaceStatement'
-  name: string
+  name: Identifier
   elements: InterfaceElements[]
 }
 
-export interface ImportStatement {
+export interface ImportStatement extends Positions {
   type: 'ImportStatement'
-  what: string[]
-  from: string
+  what: Identifier[]
+  from: StringParsed
 }
 
-export interface ExportStatement {
+export interface ExportStatement extends Positions {
   type: 'ExportStatement'
-  what: string[]
-  from?: string
+  what: Identifier[]
+  from?: StringParsed
 }
 
-export interface ClassStatement {
+export interface ClassStatement extends Positions {
   type: 'ClassStatement'
-  name: string
-  extends?: AccessDotExpression | AccessVariableExpression
-  implements?: AccessDotExpression | AccessVariableExpression
+  name: Identifier
+  extends?: AccessDotExpression | Identifier
+  implements?: AccessDotExpression | Identifier
   properties: InitializeVariableStatement[]
   methods: FunctionStatement[]
   initializer?: FunctionStatement
 }
 
-export interface ForStatement extends BlockStatement {
+export interface ForStatement extends Positions {
   type: 'ForStatement'
   variable: InitializeVariableStatement
   condition: ReturnsValue
   increment: ReturnsValue
+  block: BlockStatement
 }
 
-export interface WhileStatement extends BlockStatement {
+export interface WhileStatement extends Positions {
   type: 'WhileStatement'
   condition: ReturnsValue
+  block: BlockStatement
 }
 
-export interface ConditionStatement extends BlockStatement {
+export interface ConditionStatement extends Positions {
   type: 'ConditionStatement'
   condition?: ReturnsValue
   elseBody?: ConditionStatement
+  block: BlockStatement
 }
 
-export interface ReturnStatement {
+export interface ReturnStatement extends Positions {
   type: 'ReturnStatement'
   value: ReturnsValue
 }
@@ -253,7 +262,7 @@ export type Node =
 
 export type GlobalNode = Node | ImportStatement | ExportStatement
 
-export interface GlobalBlockStatement {
+export interface GlobalBlockStatement extends Positions {
   type: 'GlobalBlockStatement'
   body: GlobalNode[]
 }

@@ -11,9 +11,9 @@ if (data.tokens.length) {
   console.log('== Tokens ==')
   for (let token of data.tokens) {
     console.log(
-      `- [${TokenType[token.type]}] "${token.value}" at debug:${token.line}:${
-        token.col
-      }`
+      `- [${TokenType[token.type]}] "${token.value}" at debug:${
+        token.start.line
+      }:${token.start.col}-debug:${token.end.line}:${token.end.col}`
     )
   }
 }

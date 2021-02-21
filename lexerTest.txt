@@ -13,3 +13,5 @@ class DJ extends Gay implements Dj {
     println(this.asdf)
   }
 }
+
+asdf.asdf.asdf(asd)

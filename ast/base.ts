@@ -1,4 +1,4 @@
-import { AST } from 'index.ts'
+import type { AST } from './index.ts'
 
 export class Base {
   AST: AST
