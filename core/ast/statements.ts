@@ -1,4 +1,4 @@
-import { Position, TokenType } from '../lexer.ts'
+import { Position, TokenType } from '../lexer/mod.ts'
 import { Base } from './base.ts'
 import {
   AccessDotExpression,
@@ -42,7 +42,8 @@ export class Statements extends Base {
       this.AST.checkToken({
         type: TokenType.AssignmentOperator,
         value: ':=',
-        raiseError: false
+        raiseError: false,
+        addToIndex: false
       }) === undefined
     ) {
       this.AST.checkToken({
@@ -269,15 +270,7 @@ export class Statements extends Base {
       value: 'while'
     })
 
-    this.AST.checkToken({
-      type: TokenType.Parenthesis,
-      value: '('
-    })
-    const condition = this.AST.getReturnsValue()
-    this.AST.checkToken({
-      type: TokenType.Parenthesis,
-      value: ')'
-    })
+    const condition = this.AST.getReturnsValue(true, ['DictParsed'])
 
     const block = this.blockStatement()
 
@@ -298,15 +291,7 @@ export class Statements extends Base {
       value: 'if'
     })
 
-    this.AST.checkToken({
-      type: TokenType.Parenthesis,
-      value: '('
-    })
-    const condition = this.AST.getReturnsValue()
-    this.AST.checkToken({
-      type: TokenType.Parenthesis,
-      value: ')'
-    })
+    const condition = this.AST.getReturnsValue(true, ['DictParsed'])
 
     const block = this.blockStatement()
 
@@ -361,9 +346,10 @@ export class Statements extends Base {
       value: 'for'
     })
 
-    this.AST.checkToken({
+    const parenthese = this.AST.checkToken({
       type: TokenType.Parenthesis,
-      value: '('
+      value: '(',
+      raiseError: false
     })
     const variable = this.initializeVariableStatement()
     this.AST.checkToken({
@@ -375,11 +361,16 @@ export class Statements extends Base {
       type: TokenType.Operator,
       value: ','
     })
-    const increment = this.AST.getReturnsValue()
-    this.AST.checkToken({
-      type: TokenType.Parenthesis,
-      value: ')'
-    })
+    const increment = this.AST.getReturnsValue(
+      true,
+      parenthese !== undefined ? ['DictParsed'] : undefined
+    )
+    if (parenthese !== undefined) {
+      this.AST.checkToken({
+        type: TokenType.Parenthesis,
+        value: ')'
+      })
+    }
 
     const block = this.blockStatement()
 

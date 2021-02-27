@@ -1,17 +1,3 @@
-const helloSomeone := func (someone: str): "gay" {
-  println("Hello, " + someone)
+if let dj := "gay" {
+  return "gay"
 }
-helloSomeone("dj")
-
-class DJ extends Gay implements Dj {
-  let asdf: str
-  func init(): void {
-    this.asdf = "gay"
-  }
-
-  func print(): void {
-    println(this.asdf)
-  }
-}
-
-asdf.asdf.asdf(asd)

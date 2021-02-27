@@ -1,10 +1,10 @@
 import { AST } from '../ast/mod.ts'
-import { lexerOptions } from './langRules.ts'
+import { lexerOptions } from './rules.ts'
 import { Lexer, LexerOptions, TokenType } from './mod.ts'
 
 const lexer = new Lexer(lexerOptions)
 
-const code = Deno.readTextFileSync('lexerTest.txt')
+const code = Deno.readTextFileSync('../../lexerTest.txt')
 const data = lexer.parse(code)
 
 if (data.tokens.length) {
@@ -30,6 +30,6 @@ console.log(
   Deno.inspect(ast.statements.globalBlockStatement(), {
     colors: true,
     depth: Infinity,
-    iterableLimit: Infinity,
+    iterableLimit: Infinity
   })
 )
