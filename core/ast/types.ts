@@ -1,4 +1,4 @@
-import { Position } from '../lexer.ts'
+import { Position } from '../lexer/mod.ts'
 
 export enum NodeType {
   Variable,
@@ -7,7 +7,7 @@ export enum NodeType {
   Class,
   For,
   While,
-  Condition
+  Condition,
 }
 
 export type ReturnsValue =

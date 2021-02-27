@@ -1,4 +1,4 @@
-import { LexerOptions } from './lexer.ts'
+import { LexerOptions } from './mod.ts'
 
 export const lexerOptions: LexerOptions = {
   operators: {
@@ -9,7 +9,7 @@ export const lexerOptions: LexerOptions = {
     binary: ['^', '&', '|'],
     comment: ['//'],
     longComment: ['/*', '*/'],
-    other: [':', '.', '??', '?', '(', ')', ',', '?.', ';']
+    other: [':', '.', '??', '?', '(', ')', ',', '?.', ';'],
   },
   types: ['i32', 'i64', 'u32', 'u64', 'str', 'char', 'bool', 'null', 'void'],
   keywords: [
@@ -30,6 +30,6 @@ export const lexerOptions: LexerOptions = {
     'else',
     'for',
     'assert',
-    'return'
-  ]
+    'return',
+  ],
 }

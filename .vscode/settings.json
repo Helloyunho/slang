@@ -1,4 +1,9 @@
 {
   "deno.enable": true,
-  "deepscan.enable": true
+  "deepscan.enable": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.tabWidth": 2,
+  "prettier.semi": false,
+  "prettier.singleQuote": true,
+  "editor.formatOnSave": true
 }

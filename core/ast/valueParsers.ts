@@ -1,4 +1,4 @@
-import { Position, TokenType } from '../lexer.ts'
+import { Position, TokenType } from '../lexer/mod.ts'
 import { Base } from './base.ts'
 import {
   ArrayParsed,
@@ -8,20 +8,20 @@ import {
   NullParsed,
   NumberParsed,
   ReturnsValue,
-  StringParsed
+  StringParsed,
 } from './types.ts'
 
 export class ValueParsers extends Base {
   stringParser() {
     const { value, start, end } = this.AST.checkToken({
-      type: TokenType.String
+      type: TokenType.String,
     })
 
     const result: StringParsed = {
       type: 'StringParsed',
       value,
       start,
-      end
+      end,
     }
 
     return result
@@ -29,7 +29,7 @@ export class ValueParsers extends Base {
 
   numberParser() {
     const token = this.AST.checkToken({
-      type: TokenType.Number
+      type: TokenType.Number,
     })
 
     const value = Number(token.value)
@@ -39,7 +39,7 @@ export class ValueParsers extends Base {
       type: 'NumberParsed',
       value,
       start,
-      end
+      end,
     }
 
     return result
@@ -48,7 +48,7 @@ export class ValueParsers extends Base {
   booleanParser() {
     const token = this.AST.checkToken({
       type: TokenType.Keyword,
-      value: ['true', 'false']
+      value: ['true', 'false'],
     })
 
     const value = token.value === 'true'
@@ -58,7 +58,7 @@ export class ValueParsers extends Base {
       type: 'BooleanParsed',
       value,
       start,
-      end
+      end,
     }
 
     return result
@@ -67,13 +67,13 @@ export class ValueParsers extends Base {
   nullParser() {
     const { start, end } = this.AST.checkToken({
       type: TokenType.Type,
-      value: 'null'
+      value: 'null',
     })
 
     const result: NullParsed = {
       type: 'NullParsed',
       start,
-      end
+      end,
     }
 
     return result
@@ -82,7 +82,7 @@ export class ValueParsers extends Base {
   arrayParser(): ArrayParsed {
     const { start } = this.AST.checkToken({
       type: TokenType.SqBraces,
-      value: '['
+      value: '[',
     })
 
     const elements: ReturnsValue[] = []
@@ -91,14 +91,14 @@ export class ValueParsers extends Base {
       (endToken = this.AST.checkToken({
         type: TokenType.SqBraces,
         value: ']',
-        raiseError: false
+        raiseError: false,
       })) === undefined
     ) {
       elements.push(this.AST.getReturnsValue())
       this.AST.checkToken({
         type: TokenType.Operator,
         value: ',',
-        raiseError: false
+        raiseError: false,
       })
     }
 
@@ -106,7 +106,7 @@ export class ValueParsers extends Base {
       type: 'ArrayParsed',
       elements,
       start,
-      end: endToken.end
+      end: endToken.end,
     }
 
     return result
@@ -115,7 +115,7 @@ export class ValueParsers extends Base {
   dictParser(): DictParsed {
     const { start } = this.AST.checkToken({
       type: TokenType.Braces,
-      value: '{'
+      value: '{',
     })
 
     const elements: DictElement[] = []
@@ -124,14 +124,14 @@ export class ValueParsers extends Base {
       (endToken = this.AST.checkToken({
         type: TokenType.Braces,
         value: '}',
-        raiseError: false
+        raiseError: false,
       })) === undefined
     ) {
       const elementName = this.AST.expressions.identifierExpression()
 
       this.AST.checkToken({
         type: TokenType.Operator,
-        value: ':'
+        value: ':',
       })
       const elementValue = this.AST.getReturnsValue()
 
@@ -139,14 +139,14 @@ export class ValueParsers extends Base {
         name: elementName,
         value: elementValue,
         start: elementName.start,
-        end: elementValue.end
+        end: elementValue.end,
       }
 
       elements.push(element)
       this.AST.checkToken({
         type: TokenType.Operator,
         value: ',',
-        raiseError: false
+        raiseError: false,
       })
     }
 
@@ -154,7 +154,7 @@ export class ValueParsers extends Base {
       type: 'DictParsed',
       elements,
       start,
-      end: endToken.end
+      end: endToken.end,
     }
 
     return result

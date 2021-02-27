@@ -1,23 +1,23 @@
-import { TokenType } from '../lexer.ts'
+import { TokenType } from '../lexer/mod.ts'
 import { Base } from './base.ts'
 import {
   ArithmeticOperator,
   BinaryOperator,
   LogicalOperator,
   ReturnsValue,
-  UnaryOperator
+  UnaryOperator,
 } from './types.ts'
 
 export class Operators extends Base {
   arithmeticOperator(leftAST?: ReturnsValue) {
     const left = leftAST ?? this.AST.getReturnsValue()
     const operator = this.AST.checkToken({
-      type: TokenType.ArithmeticOperator
+      type: TokenType.ArithmeticOperator,
     }).value as '+' | '-' | '*' | '/' | '%'
     const right = this.AST.getReturnsValue(true, [
       'ArithmeticOperator',
       'LogicalOperator',
-      'BinaryOperator'
+      'BinaryOperator',
     ])
 
     const result: ArithmeticOperator = {
@@ -26,7 +26,7 @@ export class Operators extends Base {
       operator,
       right,
       start: left.start,
-      end: right.end
+      end: right.end,
     }
 
     return result
@@ -35,12 +35,12 @@ export class Operators extends Base {
   logicalOperator(leftAST?: ReturnsValue) {
     const left = leftAST ?? this.AST.getReturnsValue()
     const operator = this.AST.checkToken({
-      type: TokenType.LogicalOperator
+      type: TokenType.LogicalOperator,
     }).value as '==' | '!=' | '&&' | '||' | '<' | '<=' | '>' | '>='
     const right = this.AST.getReturnsValue(true, [
       'ArithmeticOperator',
       'LogicalOperator',
-      'BinaryOperator'
+      'BinaryOperator',
     ])
 
     const result: LogicalOperator = {
@@ -49,7 +49,7 @@ export class Operators extends Base {
       operator,
       right,
       start: left.start,
-      end: right.end
+      end: right.end,
     }
 
     return result
@@ -58,12 +58,12 @@ export class Operators extends Base {
   binaryOperator(leftAST?: ReturnsValue) {
     const left = leftAST ?? this.AST.getReturnsValue()
     const operator = this.AST.checkToken({
-      type: TokenType.BinaryOperator
+      type: TokenType.BinaryOperator,
     }).value as '^' | '&' | '|'
     const right = this.AST.getReturnsValue(true, [
       'ArithmeticOperator',
       'LogicalOperator',
-      'BinaryOperator'
+      'BinaryOperator',
     ])
 
     const result: BinaryOperator = {
@@ -72,7 +72,7 @@ export class Operators extends Base {
       operator,
       right,
       start: left.start,
-      end: right.end
+      end: right.end,
     }
 
     return result
@@ -87,12 +87,12 @@ export class Operators extends Base {
       this.AST.checkToken({
         type: TokenType.UnaryOperator,
         raiseError: false,
-        addToIndex: false
+        addToIndex: false,
       }) !== undefined
     ) {
       location = 'left'
       operator = this.AST.checkToken({
-        type: TokenType.UnaryOperator
+        type: TokenType.UnaryOperator,
       })
       value = this.AST.getReturnsValue(true, ['UnaryOperator'])
     } else {
@@ -100,7 +100,7 @@ export class Operators extends Base {
       value = leftAST ?? this.AST.getReturnsValue(true, ['UnaryOperator'])
       operator = this.AST.checkToken({
         type: TokenType.UnaryOperator,
-        value: ['++', '--']
+        value: ['++', '--'],
       })
     }
 
@@ -110,7 +110,7 @@ export class Operators extends Base {
       operator: operator.value as '++' | '--' | '!' | '+' | '-',
       location,
       start: location === 'left' ? operator.start : value.start,
-      end: location === 'left' ? value.end : operator.end
+      end: location === 'left' ? value.end : operator.end,
     }
 
     return result

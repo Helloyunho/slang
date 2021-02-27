@@ -1,6 +1,6 @@
-import { AST } from './ast/index.ts'
+import { AST } from '../ast/mod.ts'
 import { lexerOptions } from './langRules.ts'
-import { Lexer, LexerOptions, TokenType } from './lexer.ts'
+import { Lexer, LexerOptions, TokenType } from './mod.ts'
 
 const lexer = new Lexer(lexerOptions)
 
@@ -30,6 +30,6 @@ console.log(
   Deno.inspect(ast.statements.globalBlockStatement(), {
     colors: true,
     depth: Infinity,
-    iterableLimit: Infinity
+    iterableLimit: Infinity,
   })
 )
