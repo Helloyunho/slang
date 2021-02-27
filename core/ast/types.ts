@@ -7,7 +7,7 @@ export enum NodeType {
   Class,
   For,
   While,
-  Condition,
+  Condition
 }
 
 export type ReturnsValue =
@@ -21,6 +21,7 @@ export type ReturnsValue =
   | AccessWithArrayLikeExpression
   | StringParsed
   | NumberParsed
+  | FloatParsed
   | BooleanParsed
   | NullParsed
   | ArrayParsed
@@ -28,6 +29,8 @@ export type ReturnsValue =
   | FunctionStatement
   | TypeChangeExpression
   | DictParsed
+  | ConditionStatement
+  | InitializeVariableStatement
 
 export interface Positions {
   start: Position
@@ -107,6 +110,11 @@ export interface NumberParsed extends Positions {
   value: number
 }
 
+export interface FloatParsed extends Positions {
+  type: 'FloatParsed'
+  value: number
+}
+
 export interface BooleanParsed extends Positions {
   type: 'BooleanParsed'
   value: boolean
@@ -141,6 +149,8 @@ export type TypeValues =
   | 'char'
   | 'bool'
   | 'null'
+  | 'f32'
+  | 'f64'
 
 export interface Types extends Positions {
   type: 'Types'

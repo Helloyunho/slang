@@ -9,9 +9,21 @@ export const lexerOptions: LexerOptions = {
     binary: ['^', '&', '|'],
     comment: ['//'],
     longComment: ['/*', '*/'],
-    other: [':', '.', '??', '?', '(', ')', ',', '?.', ';'],
+    other: [':', '.', '??', '?', '(', ')', ',', '?.', ';']
   },
-  types: ['i32', 'i64', 'u32', 'u64', 'str', 'char', 'bool', 'null', 'void'],
+  types: [
+    'i32',
+    'i64',
+    'u32',
+    'u64',
+    'str',
+    'char',
+    'bool',
+    'null',
+    'void',
+    'f32',
+    'f64'
+  ],
   keywords: [
     'let',
     'const',
@@ -30,6 +42,6 @@ export const lexerOptions: LexerOptions = {
     'else',
     'for',
     'assert',
-    'return',
-  ],
+    'return'
+  ]
 }

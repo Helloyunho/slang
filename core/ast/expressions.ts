@@ -1,4 +1,4 @@
-import { TokenType } from '../lexer.ts'
+import { TokenType } from '../lexer/mod.ts'
 import { Base } from './base.ts'
 import {
   AccessDotExpression,
