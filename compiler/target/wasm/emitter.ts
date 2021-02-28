@@ -138,6 +138,129 @@ export class WasmFunctionContext extends BaseWasm {
     this.push(...ieee754(val, true))
     return this
   }
+
+  nop() {
+    this.push(OpCode.Nop)
+    return this
+  }
+
+  unreachable() {
+    this.push(OpCode.Unreachable)
+    return this
+  }
+
+  end() {
+    this.push(OpCode.End)
+    return this
+  }
+
+  block(type: BlockType) {
+    this.push(OpCode.Block)
+    this.push(...unsignedLEB128(type))
+    return this
+  }
+
+  if(type: BlockType) {
+    this.push(OpCode.If)
+    this.push(...unsignedLEB128(type))
+    return this
+  }
+
+  else() {
+    return this
+  }
+
+  return() {
+    this.push(OpCode.Return)
+    return this
+  }
+
+  br(idx: number) {
+    this.push(OpCode.Br)
+    this.push(...unsignedLEB128(idx))
+    return this
+  }
+
+  br_if(idx: number) {
+    this.push(OpCode.BrIf)
+    this.push(...unsignedLEB128(idx))
+    return this
+  }
+
+  br_trable(vecidx: number[], idx: number) {
+    this.push(OpCode.BrTable)
+    this.push(...vec(vecidx))
+    this.push(...unsignedLEB128(idx))
+    return this
+  }
+
+  call(idx: number) {
+    this.push(OpCode.Call)
+    this.push(...unsignedLEB128(idx))
+    return this
+  }
+
+  call_indirect(type: number) {
+    this.push(OpCode.CallIndirect)
+    this.push(...unsignedLEB128(type))
+    return this
+  }
+
+  i32_store(align: number, offset: number) {
+    this.push(OpCode.i32_Store)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_store8(align: number, offset: number) {
+    this.push(OpCode.i32_Store8)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_store16(align: number, offset: number) {
+    this.push(OpCode.i32_Store16)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_load(align: number, offset: number) {
+    this.push(OpCode.i32_Load)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_load8u(align: number, offset: number) {
+    this.push(OpCode.i32_Load8U)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_load8s(align: number, offset: number) {
+    this.push(OpCode.i32_Load8S)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_load16u(align: number, offset: number) {
+    this.push(OpCode.i32_Load16U)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
+
+  i32_load16s(align: number, offset: number) {
+    this.push(OpCode.i32_Load16S)
+    this.push(...unsignedLEB128(align))
+    this.push(...unsignedLEB128(offset))
+    return this
+  }
 }
 
 export class WasmContext extends BaseWasm {
@@ -145,6 +268,8 @@ export class WasmContext extends BaseWasm {
   types: number[][] = []
   func_types: number[] = []
   exports: number[][] = []
+  imports: number[][] = []
+  data: number[][] = []
 
   func(locals: [Type, number][], cb: (ctx: WasmFunctionContext) => any) {
     const ctx = new WasmFunctionContext()
@@ -170,6 +295,22 @@ export class WasmContext extends BaseWasm {
 
   export(type: ExportType, name: string, idx: number) {
     this.exports.push([...encodeString(name), type, idx])
+    return this
+  }
+
+  import(ns: string, name: string, type: ExportType, ...args: number[]) {
+    this.imports.push([
+      ...encodeString(ns),
+      ...encodeString(name),
+      type,
+      ...args,
+    ])
+    return this
+  }
+
+  dataseg(...bytes: number[]) {
+    this.data.push(vec(bytes))
+    return this
   }
 }
 
@@ -191,6 +332,10 @@ export class WasmModule extends BaseWasm {
       sec = createSection(type, vec(ctx.func_types))
     } else if (type === Section.Export) {
       sec = createSection(type, vec(ctx.exports))
+    } else if (type === Section.Import) {
+      sec = createSection(type, vec(ctx.imports))
+    } else if (type === Section.Data) {
+      sec = createSection(type, vec(ctx.data))
     } else sec = createSection(type, ctx.code)
     this.push(...sec)
     return this
@@ -208,15 +353,5 @@ export class WasmModule extends BaseWasm {
   write(path: string) {
     Deno.writeFileSync(path, this.build())
     return this
-  }
-
-  init(imports?: WebAssembly.Imports) {
-    const build = this.build()
-    console.log(
-      '[emit]',
-      this.code.filter((_, i) => i > 7).map((e) => e.toString(16))
-    )
-    const mod = new WebAssembly.Module(build)
-    return new WebAssembly.Instance(mod, imports)
   }
 }
