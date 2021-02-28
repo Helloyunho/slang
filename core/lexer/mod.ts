@@ -311,10 +311,10 @@ export class Lexer implements Position {
             this.results.error('Unexpected new line in Char state')
           }
           this.state.end()
-          this.state.start(StateType.NewLine)
-          this.state.pos()
-          this.state.end()
           this.newline()
+          this.col--
+          this.state.start(StateType.NewLine)
+          this.state.end()
         } else if (char === '\r') {
         } else if (cc >= '0'.charCodeAt(0) && cc <= '9'.charCodeAt(0)) {
           if (state() === StateType.None) {
