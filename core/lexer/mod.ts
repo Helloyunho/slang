@@ -17,7 +17,7 @@ export enum TokenType {
   Comment,
   CommentMultiline,
   Operator,
-  NewLine
+  NewLine,
 }
 
 export interface Position {
@@ -75,7 +75,7 @@ export enum StateType {
   UnaryOperator,
   Comment,
   CommentMultiline,
-  NewLine
+  NewLine,
 }
 
 export class LexerState implements Position {
@@ -117,12 +117,12 @@ export class LexerState implements Position {
       value: this.value,
       start: {
         line: this.line,
-        col: this.col
+        col: this.col,
       },
       end: {
         line: this.lexer.line,
-        col: this.lexer.col
-      }
+        col: this.lexer.col,
+      },
     }
     this.lexer.results.push(token)
     return token
@@ -203,7 +203,7 @@ export class LexerResults implements ILexerResults {
   output() {
     const res: ILexerResults = {
       tokens: this.tokens,
-      errors: this.errors
+      errors: this.errors,
     }
     this.reset()
     return res
@@ -250,7 +250,7 @@ export class Lexer implements Position {
     return res
   }
 
-  checkIfItsOperator(char: string): boolean {
+  checkOp(char: string): boolean {
     const operatorsMerged: string[] = [].concat(
       ...Object.values(this.options.operators)
     )
@@ -368,7 +368,8 @@ export class Lexer implements Position {
         } else if (char === '{' || char === '}') {
           this.state.end()
           this.state.push(char)
-          this.state.pos()
+          this.state.line = this.line
+          this.state.col = this.col++
           this.state.token(TokenType.Braces)
           this.state.reset()
         } else if (char === '[' || char === ']') {
@@ -386,7 +387,7 @@ export class Lexer implements Position {
             chars[idx] &&
             chars[idx] !== ' ' &&
             opChars.length < 2 &&
-            this.checkIfItsOperator(chars[idx])
+            this.checkOp(chars[idx])
           ) {
             opChars += chars[idx]
             this.move()
@@ -402,7 +403,7 @@ export class Lexer implements Position {
                 TokenType.LogicalOperator,
                 TokenType.UnaryOperator,
                 TokenType.Operator,
-                undefined
+                undefined,
               ].includes(
                 this.state.lexer.results.tokens[
                   this.state.lexer.results.tokens.length - 1
