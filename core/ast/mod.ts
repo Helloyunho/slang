@@ -41,7 +41,7 @@ export class AST {
 
   getToken({
     offset = 0,
-    addToIndex = false
+    addToIndex = false,
   }: {
     offset?: number
     addToIndex?: boolean
@@ -59,7 +59,7 @@ export class AST {
     value,
     raiseError,
     addToIndex,
-    offset
+    offset,
   }: {
     type?: TokenType | TokenType[]
     value?: string | string[]
@@ -72,7 +72,7 @@ export class AST {
     value,
     raiseError,
     addToIndex,
-    offset
+    offset,
   }: {
     type?: TokenType | TokenType[]
     value?: string | string[]
@@ -85,7 +85,7 @@ export class AST {
     value,
     raiseError = true,
     addToIndex = true,
-    offset = 0
+    offset = 0,
   }: {
     type?: TokenType | TokenType[]
     value?: string | string[]
@@ -94,7 +94,7 @@ export class AST {
     offset?: number
   }): Token | undefined {
     const token = this.getToken({
-      offset
+      offset,
     })
 
     if (token !== undefined) {
@@ -105,7 +105,7 @@ export class AST {
             value,
             raiseError: true,
             addToIndex,
-            offset: offset + 1
+            offset: offset + 1,
           })
         } else {
           return this.checkToken({
@@ -113,7 +113,7 @@ export class AST {
             value,
             raiseError: false,
             addToIndex,
-            offset: offset + 1
+            offset: offset + 1,
           })
         }
       }
@@ -161,7 +161,7 @@ export class AST {
       this.checkToken({
         type: TokenType.Parenthesis,
         value: '(',
-        raiseError: false
+        raiseError: false,
       }) !== undefined
 
     const getType = () => {
@@ -170,7 +170,7 @@ export class AST {
       let end: Position
       const typeToken = this.checkToken({
         type: TokenType.Type,
-        raiseError: false
+        raiseError: false,
       })
       if (typeToken !== undefined) {
         type = typeToken.value as TypeValues
@@ -184,7 +184,7 @@ export class AST {
           'UnaryOperator',
           'LogicalOperator',
           'ArrayParsed',
-          'AccessWithArrayLikeExpression'
+          'AccessWithArrayLikeExpression',
         ])
         start = type.start
         end = type.end
@@ -195,19 +195,19 @@ export class AST {
         this.checkToken({
           type: TokenType.SqBraces,
           value: '[',
-          raiseError: false
+          raiseError: false,
         }) !== undefined
       ) {
         arrayLength = Number(
           this.checkToken({
             type: TokenType.Number,
-            raiseError: false
+            raiseError: false,
           })?.value ?? Infinity
         )
 
         end = this.checkToken({
           type: TokenType.SqBraces,
-          value: ']'
+          value: ']',
         }).end
       }
 
@@ -216,7 +216,7 @@ export class AST {
         value: type,
         arrayLength,
         start,
-        end
+        end,
       }
 
       types.push(result)
@@ -227,7 +227,7 @@ export class AST {
       this.checkToken({
         type: TokenType.BinaryOperator,
         value: '|',
-        raiseError: false
+        raiseError: false,
       }) !== undefined
     ) {
       getType()
@@ -236,7 +236,7 @@ export class AST {
     if (withBracket) {
       this.checkToken({
         type: TokenType.Parenthesis,
-        value: ')'
+        value: ')',
       })
     }
 
@@ -282,12 +282,12 @@ export class AST {
       } else {
         this.checkToken({
           type: TokenType.Parenthesis,
-          value: '('
+          value: '(',
         })
         upAST = this.getReturnsValue(true, [], upAST)
         this.checkToken({
           type: TokenType.Parenthesis,
-          value: ')'
+          value: ')',
         })
       }
       // #endregion

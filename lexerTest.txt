@@ -1,3 +1,2 @@
-if let dj := "gay" {
-  return "gay"
+func main(): void {
 }

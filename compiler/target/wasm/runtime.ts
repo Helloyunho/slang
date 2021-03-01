@@ -25,7 +25,7 @@ export class WasmRuntime {
     const self = this
     this.imports.core = {
       memory: this.memory,
-      print(ptr: number, len: number) {
+      stdout_write(ptr: number, len: number) {
         Deno.stdout.writeSync(self.buffer.slice(ptr, ptr + len))
       },
     }

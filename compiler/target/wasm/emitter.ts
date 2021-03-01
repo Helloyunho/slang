@@ -314,7 +314,7 @@ export class WasmContext extends BaseWasm {
   }
 }
 
-export class WasmModule extends BaseWasm {
+export class WasmBinaryModule extends BaseWasm {
   constructor() {
     super()
     this.clear()
