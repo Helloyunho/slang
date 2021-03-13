@@ -1,9 +1,9 @@
-import { Identifier, Positions } from '../core/ast/types.ts'
+import { Identifier, Positions } from '../../core/ast/types.ts'
 export type {
   InterfaceElements,
   InterfaceStatement,
   Identifier
-} from '../core/ast/types.ts'
+} from '../../core/ast/types.ts'
 
 export type TypeValues =
   | 'void'
