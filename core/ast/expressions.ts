@@ -233,7 +233,7 @@ export class Expressions extends Base {
       toType,
       returnNull,
       start: value.start,
-      end: toType[toType.length - 1].end
+      end: toType.end
     }
 
     return result

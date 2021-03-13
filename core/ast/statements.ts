@@ -37,7 +37,7 @@ export class Statements extends Base {
 
     const name = this.AST.expressions.identifierExpression()
 
-    let type: Types[] | undefined
+    let type: Types | undefined
     if (
       this.AST.checkToken({
         type: TokenType.AssignmentOperator,
@@ -75,7 +75,7 @@ export class Statements extends Base {
         value !== undefined
           ? value.end
           : type !== undefined
-          ? type[type.length - 1].end
+          ? type.end
           : name.end
     }
 
@@ -172,10 +172,7 @@ export class Statements extends Base {
         returnType: paramType,
         default: defaultValue,
         start: paramName.start,
-        end:
-          defaultValue !== undefined
-            ? defaultValue.end
-            : paramType[paramType.length - 1].end
+        end: defaultValue !== undefined ? defaultValue.end : paramType.end
       }
 
       params.push(paramResult)
@@ -241,7 +238,7 @@ export class Statements extends Base {
         name: elementName,
         returnType: elementType,
         start: elementName.start,
-        end: elementType[elementType.length - 1].end
+        end: elementType.end
       }
 
       elements.push(element)

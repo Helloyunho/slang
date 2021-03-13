@@ -96,7 +96,7 @@ export interface AccessWithArrayLikeExpression extends Positions {
 export interface TypeChangeExpression extends Positions {
   type: 'TypeChangeExpression'
   value: ReturnsValue
-  toType: Types[]
+  toType: Types
   returnNull: boolean
 }
 
@@ -154,7 +154,7 @@ export type TypeValues =
 
 export interface Types extends Positions {
   type: 'Types'
-  value: TypeValues | ReturnsValue
+  value: Array<TypeValues | ReturnsValue | Types>
   arrayLength?: number
 }
 
@@ -162,7 +162,7 @@ export interface InitializeVariableStatement extends Positions {
   type: 'InitializeVariableStatement'
   const: boolean
   name: Identifier
-  variableType?: Types[]
+  variableType?: Types
   value?: ReturnsValue
   export?: boolean
 }
@@ -181,7 +181,7 @@ export interface AssignVariableStatement extends Positions {
 
 export interface FunctionParameter extends Positions {
   name: Identifier
-  returnType: Types[]
+  returnType: Types
   default?: ReturnsValue
 }
 
@@ -194,14 +194,14 @@ export interface FunctionStatement extends Positions {
   type: 'FunctionStatement'
   name?: Identifier
   params: FunctionParameter[]
-  returnType: Types[]
+  returnType: Types
   export?: boolean
   block: BlockStatement
 }
 
 export interface InterfaceElements extends Positions {
   name: Identifier
-  returnType: Types[]
+  returnType: Types
 }
 
 export interface InterfaceStatement extends Positions {

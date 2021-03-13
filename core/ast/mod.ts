@@ -2,7 +2,7 @@ import { Position, Token, TokenType } from '../lexer/mod.ts'
 import { Expressions } from './expressions.ts'
 import { Operators } from './operators.ts'
 import { Statements } from './statements.ts'
-import { ReturnsValue, Types, TypeValues } from './types.ts'
+import { Positions, ReturnsValue, Types, TypeValues } from './types.ts'
 import { ValueParsers } from './valueParsers.ts'
 
 export class ASTError extends Error {
@@ -150,18 +150,11 @@ export class AST {
     }
   }
 
-  getTypes(): Array<Types> {
-    const types: Array<Types> = []
+  getTypes(): Types {
+    const types: Array<TypeValues | ReturnsValue | Types> = []
 
-    const withBracket =
-      this.checkToken({
-        type: TokenType.Parenthesis,
-        value: '(',
-        raiseError: false
-      }) !== undefined
-
-    const getType = () => {
-      let type: TypeValues | ReturnsValue
+    const getType = (): Positions => {
+      let type: TypeValues | ReturnsValue | Types
       let start: Position
       let end: Position
       const typeToken = this.checkToken({
@@ -173,17 +166,31 @@ export class AST {
         start = typeToken.start
         end = typeToken.end
       } else {
-        type = this.getReturnsValue(true, [
-          'AssignVariableStatement',
-          'ArithmeticOperator',
-          'BinaryOperator',
-          'UnaryOperator',
-          'LogicalOperator',
-          'ArrayParsed',
-          'AccessWithArrayLikeExpression'
-        ])
-        start = type.start
-        end = type.end
+        const withBracket = this.checkToken({
+          type: TokenType.Parenthesis,
+          value: '(',
+          raiseError: false
+        })
+        if (withBracket !== undefined) {
+          type = this.getTypes()
+          start = withBracket.start
+          end = this.checkToken({
+            type: TokenType.Parenthesis,
+            value: ')'
+          }).end
+        } else {
+          type = this.getReturnsValue(true, [
+            'AssignVariableStatement',
+            'ArithmeticOperator',
+            'BinaryOperator',
+            'UnaryOperator',
+            'LogicalOperator',
+            'ArrayParsed',
+            'AccessWithArrayLikeExpression'
+          ])
+          start = type.start
+          end = type.end
+        }
       }
 
       let arrayLength: undefined | number
@@ -205,20 +212,25 @@ export class AST {
           type: TokenType.SqBraces,
           value: ']'
         }).end
+
+        types.push({
+          type: 'Types',
+          value: [type],
+          arrayLength,
+          start,
+          end
+        })
+      } else {
+        types.push(type)
       }
 
-      const result: Types = {
-        type: 'Types',
-        value: type,
-        arrayLength,
+      return {
         start,
         end
       }
-
-      types.push(result)
     }
 
-    getType()
+    let { start, end } = getType()
     while (
       this.checkToken({
         type: TokenType.BinaryOperator,
@@ -226,17 +238,15 @@ export class AST {
         raiseError: false
       }) !== undefined
     ) {
-      getType()
+      end = getType().end
     }
 
-    if (withBracket) {
-      this.checkToken({
-        type: TokenType.Parenthesis,
-        value: ')'
-      })
+    return {
+      type: 'Types',
+      value: types,
+      start,
+      end
     }
-
-    return types
   }
 
   getReturnsValue(
